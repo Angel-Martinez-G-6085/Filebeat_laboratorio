@@ -1,0 +1,64 @@
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.13
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - bootstrap.memory_lock=true
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - 9200:9200
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.17.13
+    container_name: kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - 5601:5601
+    depends_on:
+      - elasticsearch
+
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:7.17.13
+    container_name: filebeat
+    volumes:
+      - ./filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - ./logs:/home/jboss/logs
+    depends_on:
+      - elasticsearch
+    command: ["filebeat", "-e"]
+
+  restapi:
+    image: usuariosapi
+    container_name: rest_api_container
+    environment:
+      - DB_HOST=database_container
+      - DB_PORT=5432
+      - DB_USER=admon
+      - DB_PASSWORD=acuario248
+      - DB_database=Usuarios
+      - LOGS_LOCATION=/home/jboss/logs/app.log
+    volumes:
+      - ./logs:/home/jboss/logs
+    ports:
+      - "8080:8080"
+    networks:
+      - database_network
+  
+  
+
+volumes:
+  es_data:
+    driver: local
+
+networks:
+  database_network:
+    external: true
