@@ -1,0 +1,23 @@
+filebeat.inputs:
+  - type: filestream  # Usa filestream, como se recomienda en lugar de log.
+    enabled: true
+    paths:
+      - /home/jboss/logs/*.log  # Ruta a los archivos de log.
+
+setup.ilm.enabled: false  # Deshabilita ILM (Index Lifecycle Management) para usar un índice personalizado.
+
+output.elasticsearch:
+  hosts: ["elasticsearch:9200"]
+  index: "usuario-api-logs-%{+yyyy.MM.dd}"  # Índice personalizado con formato dinámico.
+
+setup.template:
+  name: "usuario-api-logs"
+  pattern: "usuario-api-logs-*"
+  overwrite: true
+
+logging.level: info
+logging.to_files: true
+logging.files:
+  path: /usr/share/filebeat/logs
+  name: filebeat.log
+  keepfiles: 7
