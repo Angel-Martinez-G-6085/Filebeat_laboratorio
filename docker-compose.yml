@@ -25,6 +25,11 @@ services:
       - 5601:5601
     depends_on:
       - elasticsearch
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5601/api/status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   filebeat:
     image: docker.elastic.co/beats/filebeat:7.17.13
@@ -52,8 +57,23 @@ services:
       - "8080:8080"
     networks:
       - database_network
-  
-  
+
+  metricbeat:
+    image: docker.elastic.co/beats/metricbeat:7.17.13
+    container_name: metricbeat
+    user: root
+    volumes:
+      - ./metricbeat.yml:/usr/share/metricbeat/metricbeat.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /sys/fs/cgroup:/hostfs/sys/fs/cgroup:ro
+      - /proc:/hostfs/proc:ro
+      - /:/hostfs:ro
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    depends_on:
+      kibana:
+        condition: service_healthy
+    command: ["metricbeat", "-e", "-system.hostfs=/hostfs"]
 
 volumes:
   es_data:
